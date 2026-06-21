@@ -55,6 +55,6 @@ htmlcov/
 
 # Assignment files
 Backend_DevOps_Assignment.pdf
-transactions.csv
+# transactions.csv
 Assignment_Task.txt
-requirements.txt
+# requirements.txt
