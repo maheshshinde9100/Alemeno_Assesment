@@ -10,20 +10,14 @@ This project is built using a modern, scalable backend stack. The diagram below 
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef client fill:#ffffff,stroke:#333333,stroke-width:2px;
-    classDef api fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef queue fill:#f1f8e9,stroke:#689f38,stroke-width:2px;
-    classDef worker fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
-    classDef db fill:#ede7f6,stroke:#512da8,stroke-width:2px;
-    classDef ext fill:#fafafa,stroke:#9e9e9e,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef default fill:#ffffff,stroke:#333333,stroke-width:1px,color:#000000;
 
-    Client[Client / Postman]:::client
-    FastAPI[FastAPI Server]:::api
-    PostgreSQL[(PostgreSQL Database)]:::db
-    Redis[(Redis Broker)]:::queue
-    Celery[Celery Worker]:::worker
-    Gemini[Gemini Flash API]:::ext
+    Client[Client / Postman]
+    FastAPI[FastAPI Server]
+    PostgreSQL[(PostgreSQL Database)]
+    Redis[(Redis Broker)]
+    Celery[Celery Worker]
+    Gemini[Gemini Flash API]
 
     %% Connections
     Client -- "1. Upload CSV" --> FastAPI
@@ -72,119 +66,50 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 
 ## Running the Project
 
-1. **Create the `.env` file** matching the structure above.
-2. **Start the infrastructure**:
-   ```bash
-   docker-compose up --build
-   ```
-   *(This brings up FastAPI, PostgreSQL, Redis, and the Celery Worker. Wait for the database system logs to indicate it is ready to accept connections).*
+1. Create the `.env` file matching the structure above.
+2. Start the infrastructure using Docker Compose. The database tables will be created automatically on startup.
 
-3. **Run Database Migrations**:
-   Open a second terminal window and run:
-   ```bash
-   docker-compose exec api alembic upgrade head
-   ```
+```bash
+docker compose up --build
+```
+
+*(This brings up FastAPI, PostgreSQL, Redis, and the Celery Worker. Wait for the application startup logs to indicate it is ready to accept connections).*
 
 ---
 
-## Testing the APIs & Sample Requests
+## Testing the APIs
 
-The API runs on `http://localhost:8000`. You can use Postman, `curl`, or the interactive Swagger UI at `http://localhost:8000/docs`.
+The API runs on `http://localhost:8000`. You can use Postman, `curl`, or the interactive Swagger UI at `http://localhost:8000/docs`. Ensure `transactions.csv` is in your current directory before testing the upload.
 
-### 1. Upload a CSV (`POST /api/v1/jobs/upload`)
-
-**Command:**
+### 1. Upload a CSV (Trigger the Job)
 ```bash
-curl -X POST "http://localhost:8000/api/v1/jobs/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@transactions.csv"
+curl.exe -s -X POST "http://localhost:8000/api/v1/jobs/upload" -H "accept: application/json" -F "file=@transactions.csv"
 ```
-*(Ensure `transactions.csv` is in your current directory).*
+*(Copy the `id` from the output of this command for the next steps)*
 
-**Expected Output:**
-```json
-{
-  "filename": "transactions.csv",
-  "status": "pending",
-  "row_count_raw": 90,
-  "row_count_clean": null,
-  "id": "e22d9c4b-1234-4567-89ab-cdef01234567",
-  "created_at": "2024-05-18T12:00:00.000000Z",
-  "completed_at": null,
-  "error_message": null
-}
-```
-
-### 2. Poll Job Status (`GET /api/v1/jobs/{job_id}/status`)
-
-**Command:**
-*(Replace the UUID with the `id` from step 1)*
+### 2. Check Job Status
+Replace `<YOUR-JOB-ID>` with the ID you received in step 1.
 ```bash
-curl -X GET "http://localhost:8000/api/v1/jobs/e22d9c4b-1234-4567-89ab-cdef01234567/status" -H "accept: application/json"
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs/<YOUR-JOB-ID>/status" -H "accept: application/json"
 ```
 
-**Expected Output:**
-```json
-{
-  "job_id": "e22d9c4b-1234-4567-89ab-cdef01234567",
-  "status": "completed",
-  "row_count_raw": 90,
-  "row_count_clean": 88,
-  "error_message": null,
-  "created_at": "2024-05-18T12:00:00.000Z",
-  "completed_at": "2024-05-18T12:00:05.000Z"
-}
-```
-
-### 3. Fetch Final Results (`GET /api/v1/jobs/{job_id}/results`)
-
-Once the status is `"completed"`, fetch the final data.
-
-**Command:**
+### 3. Fetch Final Results
+Once the status is `completed`, fetch the final data.
 ```bash
-curl -X GET "http://localhost:8000/api/v1/jobs/e22d9c4b-1234-4567-89ab-cdef01234567/results" -H "accept: application/json"
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs/<YOUR-JOB-ID>/results" -H "accept: application/json"
 ```
 
-**Expected Output (Truncated):**
-```json
-{
-  "job": { ... },
-  "summary": {
-    "total_spend_inr": 150450.50,
-    "total_spend_usd": 450.00,
-    "top_merchants": { "Swiggy": 12, "Amazon": 8, "Uber": 5 },
-    "anomaly_count": 3,
-    "narrative": "A majority of the spending this month occurred on food delivery and e-commerce platforms. There were three flagged statistical anomalies regarding high-value USD transactions.",
-    "risk_level": "medium"
-  },
-  "cleaned_transactions": [
-    {
-      "txn_id": "txn-001",
-      "date": "2024-05-01T00:00:00Z",
-      "merchant": "Swiggy",
-      "amount": 450.0,
-      "currency": "INR",
-      "status": "SUCCESS",
-      "category": "Food",
-      "is_anomaly": false,
-      "llm_category": "Food"
-    }
-  ],
-  "anomalies": [],
-  "category_breakdown": {
-    "Food": 15,
-    "Shopping": 20,
-    "Other": 53
-  }
-}
+### 4. List All Jobs
+List the history of jobs processed in the system.
+```bash
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs" -H "accept: application/json"
 ```
 
 ---
 
-## About `transactions.csv`
+## About transactions.csv
 The included `transactions.csv` file is a dataset designed specifically for this assignment. It contains intentionally dirty data (missing values, inconsistent currencies, duplicate rows, missing categories). Its sole purpose is to be the payload you upload to the `/jobs/upload` API endpoint to test the data cleaning pipeline, anomaly detector, and the Gemini-powered missing-category classification logic.
 
 ---
 
-**Developed by: Mahesh**
+Developed by: Mahesh Shinde

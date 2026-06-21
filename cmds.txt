@@ -1,0 +1,11 @@
+# 1. Upload the CSV File (Trigger the Job)
+curl.exe -s -X POST "http://localhost:8000/api/v1/jobs/upload" -H "accept: application/json" -F "file=@transactions.csv"
+
+# 2. Check the Status of your Job (Replace <YOUR-JOB-ID> with the ID from Step 1)
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs/<YOUR-JOB-ID>/status" -H "accept: application/json"
+
+# 3. Get the Final Results and LLM Narrative
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs/<YOUR-JOB-ID>/results" -H "accept: application/json"
+
+# 4. List All Jobs Ever Created
+curl.exe -s -X GET "http://localhost:8000/api/v1/jobs" -H "accept: application/json"
