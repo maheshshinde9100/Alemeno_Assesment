@@ -1,29 +1,29 @@
-# 🚀 AI-Powered Transaction Processing Pipeline
+# AI-Powered Transaction Processing Pipeline
 
-Welcome to the backend architecture for the AI-Powered Transaction Processing Pipeline. This system handles raw, dirty financial CSV data, processes it asynchronously, flags anomalies, and leverages the free-tier Gemini API to categorize missing transactions and generate a human-readable financial narrative.
+Welcome to the backend architecture for the AI-Powered Transaction Processing Pipeline. This system handles raw financial CSV data, processes it asynchronously, flags anomalies, and leverages the free-tier Gemini API to categorize missing transactions and generate a human-readable financial narrative.
 
 ---
 
-## 🏗 Project Architecture
+## Project Architecture
 
-This project is built using a modern, scalable backend stack.
+This project is built using a modern, scalable backend stack. The diagram below illustrates the exact request lifecycle and data flow.
 
 ```mermaid
 graph TD
     %% Styling
-    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef api fill:#bbf,stroke:#333,stroke-width:2px;
-    classDef queue fill:#bfb,stroke:#333,stroke-width:2px;
-    classDef worker fill:#fbb,stroke:#333,stroke-width:2px;
-    classDef db fill:#fbf,stroke:#333,stroke-width:2px;
-    classDef ext fill:#ddd,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef client fill:#ffffff,stroke:#333333,stroke-width:2px;
+    classDef api fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef queue fill:#f1f8e9,stroke:#689f38,stroke-width:2px;
+    classDef worker fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+    classDef db fill:#ede7f6,stroke:#512da8,stroke-width:2px;
+    classDef ext fill:#fafafa,stroke:#9e9e9e,stroke-width:2px,stroke-dasharray: 5 5;
 
-    Client[💻 Client / Postman]:::client
-    FastAPI[⚡ FastAPI Server]:::api
-    PostgreSQL[(🐘 PostgreSQL DB)]:::db
-    Redis[(🔴 Redis Broker)]:::queue
-    Celery[⚙️ Celery Worker]:::worker
-    Gemini[🤖 Gemini Flash API]:::ext
+    Client[Client / Postman]:::client
+    FastAPI[FastAPI Server]:::api
+    PostgreSQL[(PostgreSQL Database)]:::db
+    Redis[(Redis Broker)]:::queue
+    Celery[Celery Worker]:::worker
+    Gemini[Gemini Flash API]:::ext
 
     %% Connections
     Client -- "1. Upload CSV" --> FastAPI
@@ -46,12 +46,11 @@ graph TD
 
 ---
 
-## ⚙️ Environment Variables (`.env`)
+## Environment Variables
 
-Create a `.env` file in the root directory. To ensure the project uses the strictly **free-tier** version of Gemini, you just need a valid Google API key.
+Create a `.env` file in the root directory. To ensure the project uses the free-tier version of Gemini, you need a valid Google API key. You do not need to create a `.env.example` file, simply copy the structure below into your `.env` file.
 
 ```env
-# .env file structure
 APP_NAME="Transaction Processing Pipeline"
 DEBUG=True
 API_HOST="0.0.0.0"
@@ -71,17 +70,16 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 
 ---
 
-## 🚀 Running the Project
+## Running the Project
 
-1. **Clone the repository** (or navigate to your directory).
-2. **Create the `.env` file** matching the structure above.
-3. **Start the infrastructure**:
+1. **Create the `.env` file** matching the structure above.
+2. **Start the infrastructure**:
    ```bash
    docker-compose up --build
    ```
-   *(This brings up FastAPI, PostgreSQL, Redis, and the Celery Worker. Wait for the `database system is ready to accept connections` logs).*
+   *(This brings up FastAPI, PostgreSQL, Redis, and the Celery Worker. Wait for the database system logs to indicate it is ready to accept connections).*
 
-4. **Run Database Migrations**:
+3. **Run Database Migrations**:
    Open a second terminal window and run:
    ```bash
    docker-compose exec api alembic upgrade head
@@ -89,7 +87,7 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 
 ---
 
-## 🧪 Testing the APIs & Sample Requests
+## Testing the APIs & Sample Requests
 
 The API runs on `http://localhost:8000`. You can use Postman, `curl`, or the interactive Swagger UI at `http://localhost:8000/docs`.
 
@@ -102,7 +100,7 @@ curl -X POST "http://localhost:8000/api/v1/jobs/upload" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@transactions.csv"
 ```
-*(Make sure `transactions.csv` is in your current directory).*
+*(Ensure `transactions.csv` is in your current directory).*
 
 **Expected Output:**
 ```json
@@ -141,7 +139,7 @@ curl -X GET "http://localhost:8000/api/v1/jobs/e22d9c4b-1234-4567-89ab-cdef01234
 
 ### 3. Fetch Final Results (`GET /api/v1/jobs/{job_id}/results`)
 
-Once the status is `"completed"`, fetch the final data!
+Once the status is `"completed"`, fetch the final data.
 
 **Command:**
 ```bash
@@ -172,11 +170,8 @@ curl -X GET "http://localhost:8000/api/v1/jobs/e22d9c4b-1234-4567-89ab-cdef01234
       "is_anomaly": false,
       "llm_category": "Food"
     }
-    // ... 87 more
   ],
-  "anomalies": [
-    // Flagged anomalous transactions
-  ],
+  "anomalies": [],
   "category_breakdown": {
     "Food": 15,
     "Shopping": 20,
@@ -187,5 +182,9 @@ curl -X GET "http://localhost:8000/api/v1/jobs/e22d9c4b-1234-4567-89ab-cdef01234
 
 ---
 
-## 🗂 About `transactions.csv`
-The included `transactions.csv` file is a dummy dataset designed specifically for this assignment. It contains intentionally "dirty" data (missing values, inconsistent currencies, duplicate rows, missing categories). **Its sole purpose is to be the payload you upload to the `/jobs/upload` API endpoint** to test the data cleaning pipeline, anomaly detector, and the Gemini-powered missing-category classification logic.
+## About `transactions.csv`
+The included `transactions.csv` file is a dataset designed specifically for this assignment. It contains intentionally dirty data (missing values, inconsistent currencies, duplicate rows, missing categories). Its sole purpose is to be the payload you upload to the `/jobs/upload` API endpoint to test the data cleaning pipeline, anomaly detector, and the Gemini-powered missing-category classification logic.
+
+---
+
+**Developed by: Mahesh**
