@@ -1,4 +1,4 @@
-from celery import shared_task
+from app.core.celery_app import celery_app
 import pandas as pd
 from datetime import datetime, timezone
 import json
@@ -14,7 +14,8 @@ from app.services.anomaly_detector import detect_anomalies
 from app.services.llm_classifier import classify_transactions_sync
 from app.services.llm_summary import generate_summary_sync
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=5)
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=5, name="process_transaction_job")
+
 def process_transaction_job(self, job_id: str, file_path: str):
     db = SessionLocal()
     job = db.query(Job).filter(Job.id == job_id).first()
@@ -77,6 +78,7 @@ def process_transaction_job(self, job_id: str, file_path: str):
             df['llm_category'] = None
 
         # 6. Save Transactions
+        df = df.where(pd.notnull(df), None) # Fix SQLAlchemy NaN issues
         txns_to_insert = []
         for _, row in df.iterrows():
             date_val = row['date'] if pd.notnull(row['date']) else None

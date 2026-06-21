@@ -1,10 +1,16 @@
+import sys
+import os
+
+# Ensure the project root is on sys.path so 'app' is importable
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from alembic import context
-from app.core import settings
-from app.db import Base
-from app.models import *
+from app.core.config import settings
+from app.db.database import Base
+from app.models import *  # noqa: F401,F403 - register all models
 
 config = context.config
 
@@ -48,4 +54,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-

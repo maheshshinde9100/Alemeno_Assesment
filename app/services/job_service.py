@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.job import Job
 from app.models.transaction import Transaction
 from app.models.job_summary import JobSummary
-from app.tasks.processing_tasks import process_transaction_job
+from app.core.celery_app import celery_app
 import shutil
 import os
 from typing import List, Optional
@@ -40,7 +40,7 @@ def create_job_from_upload(file: UploadFile, db: Session) -> Job:
     db.commit()
     db.refresh(job)
 
-    process_transaction_job.delay(job_id, file_path)
+    celery_app.send_task("process_transaction_job", args=[job_id, file_path])
 
     return job
 
