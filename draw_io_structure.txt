@@ -1,0 +1,31 @@
+Client -> (POST /jobs/upload CSV) -> FastAPI
+FastAPI -> (Save to DB, status=pending) -> PostgreSQL
+FastAPI -> (Enqueue Task: job_id, filepath) -> Redis Broker
+FastAPI -> (Return job_id) -> Client
+
+Redis Broker -> (Dequeue Task) -> Celery Worker
+Celery Worker -> (1. Read CSV via pandas)
+Celery Worker -> (2. Clean Data)
+Celery Worker -> (3. Detect Anomalies)
+Celery Worker -> (4. Fetch uncategorised rows)
+Celery Worker -> (Batch LLM Request) -> Gemini API (GenerativeModel)
+Gemini API -> (Return JSON classifications) -> Celery Worker
+Celery Worker -> (Map categories to rows)
+Celery Worker -> (5. Save Transactions) -> PostgreSQL
+Celery Worker -> (6. Aggregate stats & Prompt LLM) -> Gemini API
+Gemini API -> (Return JSON summary) -> Celery Worker
+Celery Worker -> (7. Save JobSummary & update Job status=completed) -> PostgreSQL
+
+Client -> (GET /jobs/{job_id}/results) -> FastAPI
+FastAPI -> (Query Job, Transactions, Summary) -> PostgreSQL
+FastAPI -> (Return JSON Results) -> Client
+
+Bottlenecks & Scaling Limitations:
+1. Pandas in Celery: Entire CSV is loaded into memory. For a 5GB CSV, this will crash the worker.
+2. Gemini Rate Limits: Processing thousands of batches will hit API quota limits or timeout.
+3. Database Inserts: Using SQLAlchemy `add_all` on a 1M row dataframe is extremely slow.
+
+Production-Scale Redesign:
+1. Streaming / Chunking: Read CSV in chunks (e.g., 10,000 rows) instead of loading the whole file into pandas.
+2. Bulk Inserts: Use PostgreSQL COPY or `bulk_insert_mappings` for massive write speeds.
+3. Asynchronous LLM processing: Instead of blocking the Celery worker while waiting for Gemini, use a dedicated queue for LLM classification that can retry independently without holding up the data cleaning pipeline.
