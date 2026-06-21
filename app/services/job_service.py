@@ -2,6 +2,8 @@ import uuid
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.models.job import Job
+from app.models.transaction import Transaction
+from app.models.job_summary import JobSummary
 from app.tasks.processing_tasks import process_transaction_job
 import shutil
 import os
@@ -61,4 +63,27 @@ def get_job_status(db: Session, job_id: str):
         "error_message": job.error_message,
         "created_at": job.created_at,
         "completed_at": job.completed_at
+    }
+
+def get_job_results(db: Session, job_id: str):
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    transactions = db.query(Transaction).filter(Transaction.job_id == job_id).all()
+    summary = db.query(JobSummary).filter(JobSummary.job_id == job_id).first()
+
+    anomalies = [t for t in transactions if t.is_anomaly]
+    
+    cat_breakdown = {}
+    for t in transactions:
+        c = t.category or "Uncategorised"
+        cat_breakdown[c] = cat_breakdown.get(c, 0) + 1
+
+    return {
+        "job": job,
+        "summary": summary,
+        "cleaned_transactions": transactions,
+        "anomalies": anomalies,
+        "category_breakdown": cat_breakdown
     }

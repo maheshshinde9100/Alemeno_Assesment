@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.db.database import get_db
-from app.schemas.schemas import JobResponse, JobStatusResponse
+from app.schemas.schemas import JobResponse, JobStatusResponse, JobResultsResponse
 from app.services import job_service
 
 router = APIRouter()
@@ -24,3 +24,7 @@ def get_jobs(
 @router.get("/{job_id}/status", response_model=JobStatusResponse)
 def get_job_status(job_id: str, db: Session = Depends(get_db)):
     return job_service.get_job_status(db, job_id)
+
+@router.get("/{job_id}/results", response_model=JobResultsResponse)
+def get_job_results(job_id: str, db: Session = Depends(get_db)):
+    return job_service.get_job_results(db, job_id)
