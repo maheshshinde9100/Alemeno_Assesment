@@ -1,26 +1,18 @@
-from sqlalchemy import Column, Integer, Numeric, ForeignKey, JSON, Text, String
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
+from app.db.database import Base
 from sqlalchemy.orm import relationship
-from app.db import Base
-import enum
-
-
-class RiskLevel(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
 
 class JobSummary(Base):
     __tablename__ = "job_summaries"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False, unique=True)
-    total_spend_inr = Column(Numeric(precision=12, scale=2))
-    total_spend_usd = Column(Numeric(precision=12, scale=2))
-    top_merchants = Column(JSON)
-    anomaly_count = Column(Integer)
-    narrative = Column(Text)
-    risk_level = Column(String)
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(String, ForeignKey("jobs.id"), nullable=False, unique=True, index=True)
+    total_spend_inr = Column(Float, nullable=True)
+    total_spend_usd = Column(Float, nullable=True)
+    top_merchants = Column(JSONB, nullable=True)
+    anomaly_count = Column(Integer, nullable=True)
+    narrative = Column(String, nullable=True)
+    risk_level = Column(String, nullable=True)
 
     job = relationship("Job", back_populates="summary")
-

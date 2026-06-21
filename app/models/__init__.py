@@ -1,6 +1,6 @@
-from .job import Job, JobStatus
+from app.db.database import Base
+from .job import Job
 from .transaction import Transaction
-from .job_summary import JobSummary, RiskLevel
+from .job_summary import JobSummary
 
-__all__ = ["Job", "JobStatus", "Transaction", "JobSummary", "RiskLevel"]
-
+__all__ = ["Base", "Job", "Transaction", "JobSummary"]
